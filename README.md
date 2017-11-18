@@ -22,3 +22,11 @@ Average for the last X measurements. Colors will vary depending on the average A
   - Global AQI measurement. For the rest of the lower part of the screen, the color will be the global AQI (this is, the worse value between PM25 and PM10), and a message accordingly (excellent, bon, moyen, mauvais, dangereux)
   
 Enjoy, measure and improve this sketch! and please, if you do so, let me know!
+
+## Roadmap
+- Add reaction to touch events, switching off and on the screen on screen events, in order to save energy
+- Assess and calibrate the measurements to be sure they're accurate.
+- Use free communication digital pins to introduce a radio (Lora, bluetooh, WiFi...whatever) to send the results to an external storage system
+
+## Well known issues
+- Currently the main issue is that I'm not sure about the accurate of the results. I've blindly followed the algorithm used in this link (https://projetsdiy.fr/calculer-indice-qualite-air-iaq-ciqa-iqa-dsm501-arduino-esp8266/) and looks reasonable by comparing with the sensor specifications (http://www.samyoungsnc.com/products/3-1%20Specification%20DSM501.pdf) but still need some time to properly assess it. The reason why I think it's not accurate is that modifying the time between measurements from 30 seconds to 1h makes the measurement increase by an order of magnitude...and that shouldn't vary so much as the algorithm should be taking into account also the measurement time and normalize the output.
