@@ -20,11 +20,13 @@ Average for the last X measurements. Colors will vary depending on the average A
   - Right small windows representing the values for PM10 (concentration and AQI) and background color according to the AQI
   
   - Global AQI measurement. For the rest of the lower part of the screen, the color will be the global AQI (this is, the worse value between PM25 and PM10), and a message accordingly (excellent, bon, moyen, mauvais, dangereux)
-  
+
+If the screen is touched, it toggles between screen on and screen off, to save battery. 
+
 Enjoy, measure and improve this sketch! and please, if you do so, let me know!
 
 ## Roadmap
-- Add reaction to touch events, switching off and on the screen on screen events, in order to save energy
+- Screen reacts to touch events switching on an off the screen by manually polling if the screen is touched. I would need to change it into the use of a touch interrupt to remove unnecessary pollings. 
 - Assess and calibrate the measurements to be sure they're accurate.
 - Use free communication digital pins to introduce a radio (Lora, bluetooh, WiFi...whatever) to send the results to an external storage system
 
