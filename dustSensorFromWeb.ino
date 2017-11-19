@@ -1,3 +1,4 @@
+#include "PinChangeInt.h"
 #include "SimpleTimer.h"
 #include "SPI.h"
 #include "Adafruit_GFX.h"
@@ -12,7 +13,7 @@
  * 4 red rouge - Vout1 - 2.5 microns (PM2.5)
  * 5 black noir - GND
 */
-#define SENSOR_WARMMUP_TIME           60
+#define SENSOR_WARMMUP_TIME           1
 
 #define DUST_SENSOR_DIGITAL_PIN_PM10  30        // DSM501 Pin 2 of DSM501 (jaune / Yellow)
 #define DUST_SENSOR_DIGITAL_PIN_PM25  40        // DSM501 Pin 4 (rouge / red) 
@@ -37,6 +38,8 @@
 // For the Adafruit shield, these are the default.
 #define TFT_DC 9
 #define TFT_CS 10
+#define TS_INTERRUPTION 7
+#define TS_BACKLIGHT 3
 
 // The STMPE610 uses hardware SPI on the shield, and #8
 #define STMPE_CS 8
@@ -56,8 +59,13 @@
 #define SEVERE_COLOR                  ILI9341_RED
 #define HAZARDOUS_COLOR               ILI9341_RED
 
-#define BUFFER_SIZE                   12
+// With 30s measurements, 120 gives 1h buffer
+#define BUFFER_SIZE                   60
 
+// Needed for interrupts
+#define NO_PORTB_PINCHANGES // to indicate that port b will not be used for pin change interrupts
+#define NO_PORTJ_PINCHANGES // to indicate that port c will not be used for pin change interrupts
+#define NO_PORTK_PINCHANGES // to indicate that port d will not be used for pin change interrupts
 
 unsigned long duration;
 unsigned long starttime;
@@ -98,6 +106,7 @@ Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 int           x1, y1, x2, y2, w, h;
 unsigned long   screenLine = 0;
+boolean screenBacklight = true;
 
 void updateAQILevel(){
   AQI.AQI = (AQI.AqiPM10 > AQI.AqiPM25) ? AQI.AqiPM10 : AQI.AqiPM25;
@@ -174,18 +183,12 @@ void blink(int times) {
 }
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600);
-  pinMode(DUST_SENSOR_DIGITAL_PIN_PM10,INPUT);
-  pinMode(DUST_SENSOR_DIGITAL_PIN_PM25,INPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  //tft configuration
-  tft.begin();
-  diagnosis();
+  dustSensorInitialConfig();
+  ledInitialConfig();
   tftInitialConfig();
 
-  // warm up
+  // warm up for the dust sensor (1 minute)
   warmUp();
   
   Serial.println("Ready!");
@@ -196,26 +199,21 @@ void setup() {
   AQI.starttime = millis();
   timer.setInterval(sampletime_ms, updateAQI);
 
-  // Launch loopTouch to get screen touch events
-  //Scheduler.startLoop(loopTouch);
+  //pinMode(TS_INTERRUPTION, INPUT_PULLUP);
+  //attachInterrupt(TS_INTERRUPTION, toggleScreen, RISING);
+  //PCintPort::attachInterrupt(TS_INTERRUPTION, toggleScreen, CHANGE); // attach a PinChange Interrupt to our pin on the rising edge
+  // (RISING, FALLING and CHANGE all work with this library)
+  if (!ts.begin()) Serial.println("Failure on touch screen initialization");
 }
 
 void loop() {
   AQI.lowpulseoccupancyPM10 += pulseIn(DUST_SENSOR_DIGITAL_PIN_PM10, LOW);
   AQI.lowpulseoccupancyPM25 += pulseIn(DUST_SENSOR_DIGITAL_PIN_PM25, LOW);
+
+  // polling methodfor touch screen
+  if (ts.touched()) toggleScreen();
   
   timer.run(); 
-}
-
-void loopTouch() {
-  delay(10);
-  yield();
-  if (ts.bufferEmpty()) {
-    return;
-  }
-
-  // only reach this point if somebody clicks the screen
-  
 }
 
 void diagnosis(){
@@ -230,6 +228,15 @@ void diagnosis(){
   Serial.print("Image Format: 0x"); Serial.println(x, HEX);
   x = tft.readcommand8(ILI9341_RDSELFDIAG);
   Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX); 
+}
+
+void dustSensorInitialConfig(){
+  pinMode(DUST_SENSOR_DIGITAL_PIN_PM10,INPUT);
+  pinMode(DUST_SENSOR_DIGITAL_PIN_PM25,INPUT);
+}
+
+void ledInitialConfig(){
+  pinMode(LED_BUILTIN, OUTPUT);  
 }
 
 void warmUp(){
@@ -252,12 +259,21 @@ void warmUp(){
 }
 
 void tftInitialConfig(){
+  // diagnosis
+  tft.begin();
+  diagnosis();
+
+  // prepare for writing the first text
   tft.fillScreen(ILI9341_BLACK);
   tft.setCursor(0, 0);
   tft.setTextColor(ILI9341_WHITE);  
   tft.setTextSize(1);
   w = tft.width();
   h = tft.height();
+
+  // control backlight with TS_BACKLIGHT pin
+  pinMode(TS_BACKLIGHT, OUTPUT);
+  screenOn();
 }
 
 void tftDrawBackground() {
@@ -713,4 +729,20 @@ void drawBackground(boolean average, String partSize, int color){
   } else{
     tftUpperBackground(color);  
   }
+}
+
+void screenOn(){
+  screenBacklight = true;
+  digitalWrite(TS_BACKLIGHT, HIGH);
+}
+
+void screenOff(){
+  screenBacklight = false;
+  digitalWrite(TS_BACKLIGHT, LOW);
+}
+
+void toggleScreen(){
+  (screenBacklight) ? screenOff() : screenOn();
+  Serial.print("Toggl screen. Screen is now: ");
+  Serial.println(screenBacklight);
 }
