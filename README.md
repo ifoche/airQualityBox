@@ -26,9 +26,20 @@ If the screen is touched, it toggles between screen on and screen off, to save b
 Enjoy, measure and improve this sketch! and please, if you do so, let me know!
 
 ## Roadmap
+- Measurements are extrapolated to 24h with a formula. It would be good to only save the worse measurement for every hour, and make the daily average with worse measurements.
 - Screen reacts to touch events switching on an off the screen by manually polling if the screen is touched. I would need to change it into the use of a touch interrupt to remove unnecessary pollings. 
-- Assess and calibrate the measurements to be sure they're accurate.
+- Assess and calibrate the measurements to be sure they're accurate. Consider correcting concentrations for the altitude as explained here (https://en.wikipedia.org/wiki/Air_pollutant_concentrations)
 - Use free communication digital pins to introduce a radio (Lora, bluetooh, WiFi...whatever) to send the results to an external storage system
+- Plot results and compare with official data.
 
 ## Well known issues
-- Currently the main issue is that I'm not sure about the accurate of the results. I've blindly followed the algorithm used in this link (https://projetsdiy.fr/calculer-indice-qualite-air-iaq-ciqa-iqa-dsm501-arduino-esp8266/) and looks reasonable by comparing with the sensor specifications (http://www.samyoungsnc.com/products/3-1%20Specification%20DSM501.pdf) but still need some time to properly assess it. The reason why I think it's not accurate is that modifying the time between measurements from 30 seconds to 1h makes the measurement increase by an order of magnitude...and that shouldn't vary so much as the algorithm should be taking into account also the measurement time and normalize the output.
+- Currently the main issue is that I'm not sure about the accuracy of the results. I've blindly followed the algorithm used in this link (https://projetsdiy.fr/calculer-indice-qualite-air-iaq-ciqa-iqa-dsm501-arduino-esp8266/) and looks reasonable by comparing with the sensor specifications (http://www.samyoungsnc.com/products/3-1%20Specification%20DSM501.pdf) but still need some time to properly assess it. I used to doubt about how reliable it would be because modifying the time between measurements from 30 seconds to 1h made the measurement increase by an order of magnitude...and that shouldn't vary so much as the algorithm should be taking into account also the measurement time and normalize the output. But I realized that the sensor had to be introduced in a proper enclosure avoiding spurious light contamination and artificial air flow. So once I introduced the sensor in a box with air input and output, isolated from light contamination, results seems to be more stable and sensitive.
+
+## Dependencies
+This Arduino sketch depends on the following libraries:
+- Adafruit-GFX-Library
+- Adafruit_ILI9341
+- Adafruit_STMPE610
+- PinChangeInt (currently not working but hopefully will work after some more tries)
+- SimpleTimer
+- SPI
