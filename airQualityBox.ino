@@ -13,7 +13,7 @@
  * 4 red rouge - Vout1 - 2.5 microns (PM2.5)
  * 5 black noir - GND
 */
-#define SENSOR_WARMMUP_TIME           1
+#define SENSOR_WARMMUP_TIME           60
 
 #define DUST_SENSOR_DIGITAL_PIN_PM10  30        // DSM501 Pin 2 of DSM501 (jaune / Yellow)
 #define DUST_SENSOR_DIGITAL_PIN_PM25  40        // DSM501 Pin 4 (rouge / red) 
@@ -72,8 +72,7 @@ unsigned long starttime;
 unsigned long endtime;
 unsigned long lowpulseoccupancy = 0;
 float         ratio = 0;
-unsigned long SLEEP_TIME    = 2 * 1000;       // Sleep time between reads (in milliseconds)
-unsigned long sampletime_ms = 1L * 30L * 1000L;  // Durée de mesure - sample time (ms)
+unsigned long sampletime_ms = 10L * 60L * 1000L;  // Durée de mesure - sample time (ms)
 
 struct structAQI{
   // variable enregistreur - recorder variables
@@ -97,6 +96,10 @@ struct structAQI AQI;
 struct structAQI lastAQIs[BUFFER_SIZE];
 unsigned long measurementNumber = 0;
 int AQIAvg = 0;
+int maxPM25 = 0;
+int maxPM10 = 0;
+int minPM25 = 10;
+int minPM10 = 10;
 
 
 SimpleTimer timer;
@@ -159,6 +162,10 @@ void updateAQI() {
   }
   if (elements != 0) AQIAvg = average/elements;
   else AQIAvg = AQI.AQI;
+  if (AQI.AqiPM25 < minPM25) minPM25 = AQI.AqiPM25;
+  if (AQI.AqiPM25 > maxPM25) maxPM25 = AQI.AqiPM25;
+  if (AQI.AqiPM10 < minPM10) minPM10 = AQI.AqiPM10;
+  if (AQI.AqiPM10 > maxPM10) maxPM10 = AQI.AqiPM10;
   
   updateAQIDisplay();
   
@@ -656,6 +663,12 @@ void writePM25Values(){
   tftLowerUpLeftMessageCursor(1);
   tft.print("AQI: ");
   tft.println(AQI.AqiPM25);
+  tftLowerUpLeftMessageCursor(2);
+  tft.print("Max: ");
+  tft.println(maxPM25);
+  tftLowerUpLeftMessageCursor(3);
+  tft.print("Min: ");
+  tft.println(minPM25);
 }
 
 void writePM10Values(){
@@ -665,6 +678,12 @@ void writePM10Values(){
   tftLowerUpRightMessageCursor(1);
   tft.print("AQI: ");
   tft.println(AQI.AqiPM10);
+  tftLowerUpRightMessageCursor(2);
+  tft.print("Max: ");
+  tft.println(maxPM10);
+  tftLowerUpRightMessageCursor(3);
+  tft.print("Min: ");
+  tft.println(minPM10);
 }
 
 void writeAQILevelMessage(String message){
