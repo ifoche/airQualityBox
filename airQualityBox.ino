@@ -93,25 +93,14 @@ void updateAQI() {
   // Actualise l'indice AQI - update AQI index
   updateAQILevel();
 
-  lastAQIs[measurementNumber%BUFFER_SIZE] = AQI;
-  int elements = (measurementNumber>BUFFER_SIZE) ? BUFFER_SIZE : measurementNumber;
-  int average = 0;
-  for (int i=0; i<elements; i++){
-      average+=lastAQIs[i].AQI;
-  }
-  if (elements != 0) AQIAvg = average/elements;
-  else AQIAvg = AQI.AQI;
-  if (AQI.AqiPM25 < minPM25) minPM25 = AQI.AqiPM25;
-  if (AQI.AqiPM25 > maxPM25) maxPM25 = AQI.AqiPM25;
-  if (AQI.AqiPM10 < minPM10) minPM10 = AQI.AqiPM10;
-  if (AQI.AqiPM10 > maxPM10) maxPM10 = AQI.AqiPM10;
+  updateStatistics();
   
   updateAQIDisplay();
   
-  Serial.print("AQIs => PM25: "); Serial.print(AQI.AqiPM25); Serial.print(" | PM10: "); Serial.println(AQI.AqiPM10);
-  Serial.print(" | AQI: "); Serial.println(AQI.AQI); Serial.print(" | Message: "); Serial.println(AQI.AqiString);
+  printSerialAQI();
 
   //blink(AQI.AQI);
+  
   measurementNumber++;
 }
 
@@ -147,6 +136,21 @@ void loop() {
   if (ts.touched()) toggleScreen();
   
   timer.run(); 
+}
+
+void updateStatistics(){
+  lastAQIs[measurementNumber%BUFFER_SIZE] = AQI;
+  int elements = (measurementNumber>BUFFER_SIZE) ? BUFFER_SIZE : measurementNumber;
+  int average = 0;
+  for (int i=0; i<elements; i++){
+      average+=lastAQIs[i].AQI;
+  }
+  if (elements != 0) AQIAvg = average/elements;
+  else AQIAvg = AQI.AQI;
+  if (AQI.AqiPM25 < minPM25) minPM25 = AQI.AqiPM25;
+  if (AQI.AqiPM25 > maxPM25) maxPM25 = AQI.AqiPM25;
+  if (AQI.AqiPM10 < minPM10) minPM10 = AQI.AqiPM10;
+  if (AQI.AqiPM10 > maxPM10) maxPM10 = AQI.AqiPM10;
 }
 
 /*
@@ -413,7 +417,10 @@ int getAQI(int sensor, float density) {
   }   
 }
 
-
+void printSerialAQI(){
+  Serial.print("AQIs => PM25: "); Serial.print(AQI.AqiPM25); Serial.print(" | PM10: "); Serial.println(AQI.AqiPM10);
+  Serial.print(" | AQI: "); Serial.println(AQI.AQI); Serial.print(" | Message: "); Serial.println(AQI.AqiString);
+}
 
 
 

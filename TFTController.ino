@@ -250,3 +250,5 @@ void drawBackground(boolean average, String partSize, int color){
     tftUpperBackground(color);  
   }
 }
+
+
