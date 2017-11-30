@@ -43,9 +43,20 @@ void screenOff(){
 }
 
 void toggleScreen(){
-  (screenBacklight) ? screenOff() : screenOn();
-  Serial.print("Toggl screen. Screen is now: ");
-  Serial.println(screenBacklight);
+  (screenBacklight) ? nextScreen() : screenOn();
+  if (screenBacklight) drawDisplay();
+}
+
+void nextScreen(){
+  currentScreen++;
+  if(currentScreen == MAX_SCREENS) {
+    currentScreen = 0;
+    screenOff();
+  } 
+  
+  if (!screenBacklight) Serial.println("Screen is off");
+  Serial.print("Toggl screen. Switching to screen number: ");
+  Serial.println(currentScreen);
 }
 
 void tftDrawBackground() {
@@ -131,6 +142,17 @@ void tftUpperMessageCursor(int line, int column, int size) {
 }
 
 void drawDisplay(){
+  switch(currentScreen){
+    case SCREEN_MEASUREMENTS:
+      drawMeasurementsScreen();
+      break;
+    case SCREEN_CHART:
+      drawChartScreen();
+      break;
+  }
+}
+
+void drawMeasurementsScreen(){
   // draw global AQI level
   drawAQILevel(false, "GLOBAL", AQI.AQI);
   // draw PM25 AQI level
@@ -251,4 +273,33 @@ void drawBackground(boolean average, String partSize, int color){
   }
 }
 
+// CHART functions
+void drawChartScreen(){
+  drawChartBackground();
+  drawChartAxis();
+}
+
+void drawChartBackground(){
+  tft.fillScreen(ILI9341_LIGHTGREY);
+}
+
+void drawChartAxis(){
+  drawChartXAxis();
+
+  drawChartYAxis();
+}
+
+void drawChartXAxis(){
+  x1 = CENTRAL_LINEWIDTH;
+  x2 = w-CENTRAL_LINEWIDTH;
+  y1 = y2 = h-CENTRAL_LINEWIDTH;
+  tft.drawLine(x1, y1, x2, y2, FOREGROUND_COLOR);
+}
+
+void drawChartYAxis(){
+  x1 = x2= CENTRAL_LINEWIDTH;
+  y1 = CENTRAL_LINEWIDTH;
+  y2 = h-CENTRAL_LINEWIDTH;
+  tft.drawLine(x1, y1, x2, y2, FOREGROUND_COLOR);  
+}
 

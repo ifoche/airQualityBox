@@ -49,6 +49,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 int           x1, y1, x2, y2, w, h;
 unsigned long   screenLine = 0;
 boolean screenBacklight = true;
+int currentScreen = 0;
 
 void updateAQILevel(){
   AQI.AQI = (AQI.AqiPM10 > AQI.AqiPM25) ? AQI.AqiPM10 : AQI.AqiPM25;
