@@ -4,75 +4,15 @@
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
 #include "Adafruit_STMPE610.h"
+#include "airQualityBox.h"
 
-/* Connect the DSM501 sensor as follow 
- * https://www.elektronik.ropla.eu/pdf/stock/smy/dsm501.pdf
- * 1 green vert - Not used
- * 2 yellow jaune - Vout2 - 1 microns (PM1.0)
- * 3 white blanc - Vcc
- * 4 red rouge - Vout1 - 2.5 microns (PM2.5)
- * 5 black noir - GND
-*/
-#define SENSOR_WARMMUP_TIME           60
-
-#define DUST_SENSOR_DIGITAL_PIN_PM10  30        // DSM501 Pin 2 of DSM501 (jaune / Yellow)
-#define DUST_SENSOR_DIGITAL_PIN_PM25  40        // DSM501 Pin 4 (rouge / red) 
-
-#define COUNTRY                       0         // 0. France, 1. Europe, 2. USA/China
-#define FRANCE                        0
-#define EUROPE                        1
-#define USA_CHINA                     2
-
-#define EXCELLENT                     "Excellent"
-#define GOOD                          "Bon"
-#define ACCEPTABLE                    "Moyen"
-#define MODERATE                      "Mediocre"
-#define HEAVY                         "Mauvais"
-#define SEVERE                        "Tres mauvais"
-#define HAZARDOUS                     "Dangereux"
-
-#define PM25_SENSOR                   0
-#define PM10_SENSOR                   1
-
-/* Screen TFT from Adafruit */
-// For the Adafruit shield, these are the default.
-#define TFT_DC 9
-#define TFT_CS 10
-#define TS_INTERRUPTION 7
-#define TS_BACKLIGHT 3
-
-// The STMPE610 uses hardware SPI on the shield, and #8
-#define STMPE_CS 8
-
-#define MAX_LINES                     40
-#define CENTRAL_LINEWIDTH             6
-#define BACKGROUND_COLOR              ILI9341_WHITE
-#define FOREGROUND_COLOR              ILI9341_DARKGREY
-#define UPPER_BG_COLOR                ILI9341_NAVY
-#define LOWER_BG_COLOR                ILI9341_LIGHTGREY
-
-#define EXCELLENT_COLOR               ILI9341_DARKGREEN
-#define GOOD_COLOR                    ILI9341_GREEN
-#define ACCEPTABLE_COLOR              ILI9341_GREENYELLOW
-#define MODERATE_COLOR                ILI9341_YELLOW
-#define HEAVY_COLOR                   ILI9341_ORANGE
-#define SEVERE_COLOR                  ILI9341_RED
-#define HAZARDOUS_COLOR               ILI9341_RED
-
-// With 30s measurements, 120 gives 1h buffer
-#define BUFFER_SIZE                   60
-
-// Needed for interrupts
-#define NO_PORTB_PINCHANGES // to indicate that port b will not be used for pin change interrupts
-#define NO_PORTJ_PINCHANGES // to indicate that port c will not be used for pin change interrupts
-#define NO_PORTK_PINCHANGES // to indicate that port d will not be used for pin change interrupts
 
 unsigned long duration;
 unsigned long starttime;
 unsigned long endtime;
 unsigned long lowpulseoccupancy = 0;
 float         ratio = 0;
-unsigned long sampletime_ms = 10L * 60L * 1000L;  // Durée de mesure - sample time (ms)
+unsigned long sampletime_ms = SAMPLE_TIME;  // Durée de mesure - sample time (ms)
 
 struct structAQI{
   // variable enregistreur - recorder variables
@@ -100,7 +40,6 @@ int maxPM25 = 0;
 int maxPM10 = 0;
 int minPM25 = 10;
 int minPM10 = 10;
-
 
 SimpleTimer timer;
 
@@ -176,19 +115,6 @@ void updateAQI() {
   measurementNumber++;
 }
 
-void blink(){
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(500);                       // wait for a second
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  delay(200);
-}
-
-void blink(int times) {
-  for (int i=0; i<times; i++){
-    blink();  
-  }
-}
-
 void setup() {
   Serial.begin(9600);
   dustSensorInitialConfig();
@@ -221,148 +147,6 @@ void loop() {
   if (ts.touched()) toggleScreen();
   
   timer.run(); 
-}
-
-void diagnosis(){
-// read diagnostics (optional but can help debug problems)
-  uint8_t x = tft.readcommand8(ILI9341_RDMODE);
-  Serial.print("Display Power Mode: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDMADCTL);
-  Serial.print("MADCTL Mode: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDPIXFMT);
-  Serial.print("Pixel Format: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDIMGFMT);
-  Serial.print("Image Format: 0x"); Serial.println(x, HEX);
-  x = tft.readcommand8(ILI9341_RDSELFDIAG);
-  Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX); 
-}
-
-void dustSensorInitialConfig(){
-  pinMode(DUST_SENSOR_DIGITAL_PIN_PM10,INPUT);
-  pinMode(DUST_SENSOR_DIGITAL_PIN_PM25,INPUT);
-}
-
-void ledInitialConfig(){
-  pinMode(LED_BUILTIN, OUTPUT);  
-}
-
-void warmUp(){
-  // wait for DSM501 to warm up (typically 60s)
-  for (int i = 1; i <= SENSOR_WARMMUP_TIME; i++)
-  {
-    delay(1000); // 1s
-    //Serial
-    Serial.print(i);
-    Serial.println(" s (wait 60s for DSM501 to warm up)");
-
-    //TFT
-    if (i == MAX_LINES) {
-      tft.fillScreen(ILI9341_BLACK);
-      tft.setCursor(0, 0);
-    }
-    tft.print(i);
-    tft.println(" s (wait 60s for DSM501 to warm up)");
-  }
-}
-
-void tftInitialConfig(){
-  // diagnosis
-  tft.begin();
-  diagnosis();
-
-  // prepare for writing the first text
-  tft.fillScreen(ILI9341_BLACK);
-  tft.setCursor(0, 0);
-  tft.setTextColor(ILI9341_WHITE);  
-  tft.setTextSize(1);
-  w = tft.width();
-  h = tft.height();
-
-  // control backlight with TS_BACKLIGHT pin
-  pinMode(TS_BACKLIGHT, OUTPUT);
-  screenOn();
-}
-
-void tftDrawBackground() {
-  x1 = 0;
-  x2 = w;
-  y1 = y2 = h/2;
-  tft.fillScreen(BACKGROUND_COLOR);
-  
-  for (int i=0; i<CENTRAL_LINEWIDTH; i++){
-    tft.drawLine(x1, y1-CENTRAL_LINEWIDTH/2+i, x2, y2-CENTRAL_LINEWIDTH/2+i, FOREGROUND_COLOR);
-  }
-
-  /* Upper side */
-  tftUpperBackground();
-
-  /* Down side */
-  tftLowerBackground();
-}
-
-void tftUpperBackground() {
-  tftUpperBackground(UPPER_BG_COLOR);
-}
-
-void tftUpperBackground(int color) {
-  tft.fillRect(0, 0, w, h/2-CENTRAL_LINEWIDTH/2, color);
-}
-
-void tftLowerBackground() {
-  tftLowerBackground(LOWER_BG_COLOR);
-}
-
-void tftLowerBackground(int color) {
-  tft.fillRect(0, h/2+CENTRAL_LINEWIDTH/2, w, h/2-CENTRAL_LINEWIDTH/2, color);
-}
-
-void tftLowerUpLeftCorner(int color) {
-  tft.fillRoundRect(CENTRAL_LINEWIDTH, h/2+CENTRAL_LINEWIDTH/2+CENTRAL_LINEWIDTH, w/3, h/3, CENTRAL_LINEWIDTH, color);
-  tft.drawRoundRect(CENTRAL_LINEWIDTH, h/2+CENTRAL_LINEWIDTH/2+CENTRAL_LINEWIDTH, w/3, h/3, CENTRAL_LINEWIDTH, FOREGROUND_COLOR);
-}
-
-void tftLowerUpRightCorner(int color){
-  tft.fillRoundRect(w-w/3-CENTRAL_LINEWIDTH, h/2+CENTRAL_LINEWIDTH/2+CENTRAL_LINEWIDTH, w/3, h/3, CENTRAL_LINEWIDTH, color);
-  tft.drawRoundRect(w-w/3-CENTRAL_LINEWIDTH, h/2+CENTRAL_LINEWIDTH/2+CENTRAL_LINEWIDTH, w/3, h/3, CENTRAL_LINEWIDTH, FOREGROUND_COLOR);
-}
-
-void tftLowerMessage(String message) {
-  tft.setCursor(w/7, h/2+h/3+CENTRAL_LINEWIDTH*5);
-  tft.setTextSize(2);
-  tft.setTextColor(ILI9341_BLACK);
-  tft.println(message);
-}
-
-void tftLowerUpLeftTitle(String title) {
-  tft.setCursor(CENTRAL_LINEWIDTH*2, h/2+CENTRAL_LINEWIDTH/2+CENTRAL_LINEWIDTH*2);
-  tft.setTextSize(2);
-  tft.setTextColor(ILI9341_BLACK);
-  tft.println(title);
-}
-
-void tftLowerUpRightTitle(String title) {
-  tft.setCursor(w-w/3, h/2+CENTRAL_LINEWIDTH/2+CENTRAL_LINEWIDTH*2);
-  tft.setTextSize(2);
-  tft.setTextColor(ILI9341_BLACK);
-  tft.println(title);
-}
-
-void tftLowerUpLeftMessageCursor(int line){
-  tft.setCursor(CENTRAL_LINEWIDTH*2, h/2+CENTRAL_LINEWIDTH/2+CENTRAL_LINEWIDTH*6+CENTRAL_LINEWIDTH*2*line);
-  tft.setTextSize(1);
-  tft.setTextColor(ILI9341_BLACK);
-}
-
-void tftLowerUpRightMessageCursor(int line){
-  tft.setCursor(w-w/3, h/2+CENTRAL_LINEWIDTH/2+CENTRAL_LINEWIDTH*6+CENTRAL_LINEWIDTH*2*line);
-  tft.setTextSize(1);
-  tft.setTextColor(ILI9341_BLACK);
-}
-
-void tftUpperMessageCursor(int line, int column, int size) {
-  tft.setCursor(w/16*column, CENTRAL_LINEWIDTH*4*line);
-  tft.setTextSize(size);
-  tft.setTextColor(ILI9341_BLACK);
 }
 
 /*
@@ -629,139 +413,7 @@ int getAQI(int sensor, float density) {
   }   
 }
 
-void drawDisplay(){
-  // draw global AQI level
-  drawAQILevel(false, "GLOBAL", AQI.AQI);
-  // draw PM25 AQI level
-  drawAQILevel(false, "PM25", AQI.AqiPM25);
-  // draw PM10 AQI level
-  drawAQILevel(false, "PM10", AQI.AqiPM10);
-  // draw last BUFFER_SIZE average global AQI level
-  drawAQILevel(true, "AVERAGE", AQIAvg);
 
-  // write global AQI message
-  writeAQILevelMessage(AQI.AqiString + " ("  + AQI.AQI + ")");
 
-  // write titles
-  tftLowerUpLeftTitle("PM25:");
-  tftLowerUpRightTitle("PM10:");
 
-  // write PM25 values
-  writePM25Values();
 
-  // write PM10 values
-  writePM10Values();
-
-  // write average AQI message
-  writeAvgAQIMessage();
-}
-
-void writePM25Values(){
-  tftLowerUpLeftMessageCursor(0);
-  tft.print("Conc: ");
-  tft.println(AQI.concentrationPM25);
-  tftLowerUpLeftMessageCursor(1);
-  tft.print("AQI: ");
-  tft.println(AQI.AqiPM25);
-  tftLowerUpLeftMessageCursor(2);
-  tft.print("Max: ");
-  tft.println(maxPM25);
-  tftLowerUpLeftMessageCursor(3);
-  tft.print("Min: ");
-  tft.println(minPM25);
-}
-
-void writePM10Values(){
-  tftLowerUpRightMessageCursor(0);
-  tft.print("Conc: ");
-  tft.println(AQI.concentrationPM10);
-  tftLowerUpRightMessageCursor(1);
-  tft.print("AQI: ");
-  tft.println(AQI.AqiPM10);
-  tftLowerUpRightMessageCursor(2);
-  tft.print("Max: ");
-  tft.println(maxPM10);
-  tftLowerUpRightMessageCursor(3);
-  tft.print("Min: ");
-  tft.println(minPM10);
-}
-
-void writeAQILevelMessage(String message){
-  tftLowerMessage(message);
-}
-
-void writeAvgAQIMessage(){
-  tftUpperMessageCursor(1, 4, 1);
-  tft.print("Avg for the last "); 
-  tft.println((measurementNumber<BUFFER_SIZE) ? measurementNumber+1 : BUFFER_SIZE);
-  tftUpperMessageCursor(2, 4, 1);
-  tft.print("AQI measurements: "); 
-  tftUpperMessageCursor(3, 7, 2);
-  tft.println(AQIAvg);
-  Serial.print("Avg for the last: "); Serial.print(measurementNumber); Serial.print(" AQI measurements: "); Serial.println(AQIAvg);
-}
-
-void drawAQILevel(boolean average, String partSize, int level){
-  switch(level){
-    case 1:
-    drawBackground(average, partSize, EXCELLENT_COLOR);
-  break;
-    case 2:
-    drawBackground(average, partSize, EXCELLENT_COLOR);
-  break;
-    case 3:
-    drawBackground(average, partSize, GOOD_COLOR);
-  break;
-    case 4:
-    drawBackground(average, partSize, GOOD_COLOR);
-  break;
-    case 5:
-    drawBackground(average, partSize, ACCEPTABLE_COLOR);
-  break;
-    case 6:
-    drawBackground(average, partSize, MODERATE_COLOR);
-  break;
-    case 7:
-    drawBackground(average, partSize, MODERATE_COLOR);
-  break;
-    case 8:
-    drawBackground(average, partSize, HEAVY_COLOR);
-  break;
-    case 9:
-    drawBackground(average, partSize, HEAVY_COLOR);
-  break;
-    case 10:
-    drawBackground(average, partSize, HAZARDOUS_COLOR);
-  break;
-  }  
-}
-
-void drawBackground(boolean average, String partSize, int color){
-  if (!average){
-    if (partSize == "GLOBAL") {
-      tftLowerBackground(color);
-    } else if (partSize == "PM25") {
-      tftLowerUpLeftCorner(color);
-    } else if (partSize == "PM10") {
-      tftLowerUpRightCorner(color);
-    }
-  } else{
-    tftUpperBackground(color);  
-  }
-}
-
-void screenOn(){
-  screenBacklight = true;
-  digitalWrite(TS_BACKLIGHT, HIGH);
-}
-
-void screenOff(){
-  screenBacklight = false;
-  digitalWrite(TS_BACKLIGHT, LOW);
-}
-
-void toggleScreen(){
-  (screenBacklight) ? screenOff() : screenOn();
-  Serial.print("Toggl screen. Screen is now: ");
-  Serial.println(screenBacklight);
-}
