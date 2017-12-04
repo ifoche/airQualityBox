@@ -1,5 +1,5 @@
-#define SENSOR_WARMMUP_TIME           1
-#define SAMPLE_TIME                   10L * 60L * 1000L
+#define SENSOR_WARMMUP_TIME           60
+#define SAMPLE_TIME                   15L * 60L * 1000L
 #define BUFFER_SIZE                   60
 
 #define DUST_SENSOR_DIGITAL_PIN_PM10  30        // DSM501 Pin 2 of DSM501 (jaune / Yellow)

@@ -1,5 +1,4 @@
 
-
 void tftInitialConfig(){
   // diagnosis
   tft.begin();
@@ -12,6 +11,8 @@ void tftInitialConfig(){
   tft.setTextSize(1);
   w = tft.width();
   h = tft.height();
+  xAxisSize = w-5*CENTRAL_LINEWIDTH;
+  yAxisSize = h-5*CENTRAL_LINEWIDTH;
 
   // control backlight with TS_BACKLIGHT pin
   pinMode(TS_BACKLIGHT, OUTPUT);
@@ -276,7 +277,10 @@ void drawBackground(boolean average, String partSize, int color){
 // CHART functions
 void drawChartScreen(){
   drawChartBackground();
+  
   drawChartAxis();
+  
+  (measurementNumber > BUFFER_SIZE) ? drawChartValues(lastAQIs) : drawChartValues(lastAQIs, measurementNumber);
 }
 
 void drawChartBackground(){
@@ -290,16 +294,99 @@ void drawChartAxis(){
 }
 
 void drawChartXAxis(){
-  x1 = CENTRAL_LINEWIDTH;
-  x2 = w-CENTRAL_LINEWIDTH;
-  y1 = y2 = h-CENTRAL_LINEWIDTH;
-  tft.drawLine(x1, y1, x2, y2, FOREGROUND_COLOR);
+  tft.drawLine(CENTRAL_LINEWIDTH*4, h-CENTRAL_LINEWIDTH*4, w-CENTRAL_LINEWIDTH, h-CENTRAL_LINEWIDTH*4, FOREGROUND_COLOR);
+
+  for (int i=1; i<=BUFFER_SIZE; i++){
+    tft.drawLine((xAxisSize/BUFFER_SIZE)*i+4*CENTRAL_LINEWIDTH, h-3*CENTRAL_LINEWIDTH, (xAxisSize/BUFFER_SIZE)*i+4*CENTRAL_LINEWIDTH, h-5*CENTRAL_LINEWIDTH, FOREGROUND_COLOR);  
+  }
+
+  drawChartXAxisTitles();
 }
 
 void drawChartYAxis(){
-  x1 = x2= CENTRAL_LINEWIDTH;
-  y1 = CENTRAL_LINEWIDTH;
-  y2 = h-CENTRAL_LINEWIDTH;
-  tft.drawLine(x1, y1, x2, y2, FOREGROUND_COLOR);  
+  tft.drawLine(CENTRAL_LINEWIDTH*4, CENTRAL_LINEWIDTH, CENTRAL_LINEWIDTH*4, h-CENTRAL_LINEWIDTH*4, FOREGROUND_COLOR);  
+
+  for (int i=0; i<10; i++){
+    tft.drawLine(3*CENTRAL_LINEWIDTH ,(yAxisSize/10)*i+CENTRAL_LINEWIDTH, 5*CENTRAL_LINEWIDTH, ((yAxisSize/10)*i)+CENTRAL_LINEWIDTH, FOREGROUND_COLOR);
+  }
+
+  drawChartYAxisTitles();
+}
+
+void drawChartYAxisTitles(){
+  tft.setTextSize(1);
+  tft.setTextColor(ILI9341_BLACK);
+
+  tft.setCursor(CENTRAL_LINEWIDTH, h-3*CENTRAL_LINEWIDTH);
+  tft.println("AQI");
+
+  for (int i=1; i<11; i++){
+    tft.setCursor(CENTRAL_LINEWIDTH, h-((yAxisSize/10)*i)-4*CENTRAL_LINEWIDTH);
+    tft.println(i);
+  }
+}
+
+void drawChartXAxisTitles(){
+  tft.setTextSize(1);
+  tft.setTextColor(ILI9341_BLACK);
+
+  tft.setCursor(w/3, h-2*CENTRAL_LINEWIDTH);
+  tft.println("Measurements");
+}
+
+void drawChartValues(struct structAQI *AQIs, int limit){
+  struct structAQI *AQIPointer = AQIs;
+  for (int i=0; i<limit; i++){
+    drawChartValue(i, AQIs->AQI);
+    AQIPointer += sizeof(struct structAQI);
+  }
+}
+
+void drawChartValues(struct structAQI *AQIs){
+   drawChartValues(AQIs, BUFFER_SIZE);
+}
+
+void drawChartValue(int x, int AQI){
+  
+  Serial.print("AQI value: ");
+  Serial.println(AQI);
+  int color = ILI9341_BLACK;
+
+  switch(AQI){
+  case 1:
+    color=EXCELLENT_COLOR;
+    break;  
+  case 2:
+    color=EXCELLENT_COLOR;
+    break;  
+  case 3:
+    color=GOOD_COLOR;
+    break;  
+  case 4:
+    color=GOOD_COLOR;
+    break;  
+  case 5:
+    color=ACCEPTABLE_COLOR;
+    break;  
+  case 6:
+    color=MODERATE_COLOR;
+    break;  
+  case 7:
+    color=MODERATE_COLOR;
+    break;  
+  case 8:
+    color=HEAVY_COLOR;
+    break;    
+  case 9:
+    color=HEAVY_COLOR;
+    break;  
+  case 10:
+    color=HAZARDOUS_COLOR;
+    break;  
+  }
+  
+  //TODO: Draw a point coloured depending on its AQI in the TFT screen
+  int y = (-AQI+11)*(yAxisSize/10);
+  tft.fillCircle(x+4*CENTRAL_LINEWIDTH, y, CENTRAL_LINEWIDTH, color);
 }
 

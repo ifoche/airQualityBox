@@ -46,7 +46,7 @@ SimpleTimer timer;
 Adafruit_STMPE610 ts = Adafruit_STMPE610(STMPE_CS);
 
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-int           x1, y1, x2, y2, w, h;
+int           x1, y1, x2, y2, w, h, xAxisSize, yAxisSize;
 unsigned long   screenLine = 0;
 boolean screenBacklight = true;
 int currentScreen = 0;
