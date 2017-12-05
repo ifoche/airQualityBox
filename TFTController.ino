@@ -337,7 +337,7 @@ void drawChartXAxisTitles(){
 void drawChartValues(struct structAQI *AQIs, int limit){
   struct structAQI *AQIPointer = AQIs;
   for (int i=0; i<limit; i++){
-    drawChartValue(i, AQIs->AQI);
+    drawChartValue(i, AQIPointer->AQI);
     AQIPointer += sizeof(struct structAQI);
   }
 }
@@ -386,7 +386,7 @@ void drawChartValue(int x, int AQI){
   }
   
   //TODO: Draw a point coloured depending on its AQI in the TFT screen
-  int y = (-AQI+11)*(yAxisSize/10);
-  tft.fillCircle(x+4*CENTRAL_LINEWIDTH, y, CENTRAL_LINEWIDTH, color);
+  int y = (-AQI+10)*(yAxisSize/10);
+  tft.fillCircle(x+4*CENTRAL_LINEWIDTH, y, CENTRAL_LINEWIDTH/2, color);
 }
 
