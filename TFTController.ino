@@ -296,14 +296,16 @@ void drawChartAxis(){
 void drawChartXAxis(){
   tft.drawLine(CENTRAL_LINEWIDTH*4, h-CENTRAL_LINEWIDTH*4, w-CENTRAL_LINEWIDTH, h-CENTRAL_LINEWIDTH*4, FOREGROUND_COLOR);
 
-  for (int i=1; i<=BUFFER_SIZE; i++){
-    tft.drawLine((xAxisSize/BUFFER_SIZE)*i+6*CENTRAL_LINEWIDTH, h-3*CENTRAL_LINEWIDTH, (xAxisSize/BUFFER_SIZE)*i+6*CENTRAL_LINEWIDTH, h-5*CENTRAL_LINEWIDTH, FOREGROUND_COLOR);  
+  for (int i=0; i<BUFFER_SIZE; i++){
+    tft.drawLine((xAxisSize/BUFFER_SIZE)*i+6*CENTRAL_LINEWIDTH, h-3.5*CENTRAL_LINEWIDTH, (xAxisSize/BUFFER_SIZE)*i+6*CENTRAL_LINEWIDTH, h-4.5*CENTRAL_LINEWIDTH, FOREGROUND_COLOR);  
   }
 
   drawChartXAxisTitles();
 }
 
 void drawChartYAxis(){
+  tft.setTextSize(1);
+  tft.setTextColor(ILI9341_BLACK);
   tft.drawLine(CENTRAL_LINEWIDTH*4, CENTRAL_LINEWIDTH, CENTRAL_LINEWIDTH*4, h-CENTRAL_LINEWIDTH*4, FOREGROUND_COLOR);  
 
   for (int i=0; i<10; i++){
@@ -330,8 +332,17 @@ void drawChartXAxisTitles(){
   tft.setTextSize(1);
   tft.setTextColor(ILI9341_BLACK);
 
-  tft.setCursor(w/3, h-2*CENTRAL_LINEWIDTH);
+  tft.setCursor(w/3, h-1.5*CENTRAL_LINEWIDTH);
   tft.println("Measurements");
+
+  for (int i=0; i<BUFFER_SIZE; i++){
+    // Show titles per hour
+    if (((SAMPLE_TIME*i)%3600000L) == 0){
+      tft.setCursor((xAxisSize/BUFFER_SIZE)*i+6*CENTRAL_LINEWIDTH, h-3*CENTRAL_LINEWIDTH);
+      tft.print((long)(SAMPLE_TIME*i)/3600000L);
+      tft.println("h");
+    }
+  }
 }
 
 void drawChartValues(struct structAQI *AQIs, int limit){
@@ -346,9 +357,6 @@ void drawChartValues(struct structAQI *AQIs){
 }
 
 void drawChartValue(int x, int AQI){
-  
-  Serial.print("AQI value: ");
-  Serial.println(AQI);
   int color = ILI9341_BLACK;
 
   switch(AQI){
@@ -385,7 +393,9 @@ void drawChartValue(int x, int AQI){
   }
   
   //TODO: Draw a point coloured depending on its AQI in the TFT screen
-  int y = (-AQI+10)*(yAxisSize/10);
-  tft.fillCircle(x+6*CENTRAL_LINEWIDTH, y, CENTRAL_LINEWIDTH/2, color);
+  int yPos = (-AQI+10)*(yAxisSize/10)+CENTRAL_LINEWIDTH;
+  int xPos = (xAxisSize/BUFFER_SIZE)*x+6*CENTRAL_LINEWIDTH;
+  tft.fillCircle(xPos, yPos, CENTRAL_LINEWIDTH/2, color);
+  tft.drawLine(xPos, h-CENTRAL_LINEWIDTH*4, xPos, yPos, color);
 }
 

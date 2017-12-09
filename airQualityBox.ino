@@ -162,7 +162,6 @@ void updateStatistics(){
  * Calculate French ATMO AQI indicator
  */
 int getATMO( int sensor, float density ){
-  Serial.print("Using getATM0 for sensor "); Serial.print(sensor); Serial.print(" and density "); Serial.println(density);
   if ( sensor == PM25_SENSOR ) { //PM2,5
     if ( density <= 11 ) {
       return 1; 
@@ -221,7 +220,6 @@ void updateAQIDisplay(){
    * 7 HAZARDOUS
    */
 #if COUNTRY == FRANCE
-  Serial.println("Country is FRANCE");
   // Système ATMO français - French ATMO AQI system 
   switch ( AQI.AQI) {
     case 10: 
@@ -267,7 +265,6 @@ void updateAQIDisplay(){
   }
   
 #elif COUNTRY == EUROPE
-  Serial.println("Country is EUROPE");
   // European CAQI
   switch ( AQI.AQI) {
     case 25: 
@@ -293,7 +290,6 @@ void updateAQIDisplay(){
   }
   
 #elif COUNTRY == USA_CHINA
-  Serial.println("Country is USA_CHINA");
   // USA / CN
   if ( AQI.AQI <= 50 ) {
       AQI.AqiString = GOOD;
@@ -316,7 +312,6 @@ void updateAQIDisplay(){
   }
 #endif  
 
-  Serial.println("DrawDisplay");
   drawDisplay();
 }
 /*
