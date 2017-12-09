@@ -77,19 +77,7 @@ void updateAQI() {
   AQI.starttime = millis();
       
   // Actualise l'AQI de chaque capteur - update AQI for each sensor 
-  if ( COUNTRY == FRANCE ) {
-    // France
-    AQI.AqiPM25 = getATMO( PM25_SENSOR, AQI.concentrationPM25 );
-    AQI.AqiPM10 = getATMO( PM10_SENSOR, AQI.concentrationPM10 );
-  } else if ( COUNTRY == EUROPE ) {
-    // Europe
-    AQI.AqiPM25 = getACQI( PM25_SENSOR, AQI.concentrationPM25 );
-    AQI.AqiPM10 = getACQI( PM10_SENSOR, AQI.concentrationPM10 );
-  } else {
-    // USA / China
-    AQI.AqiPM25 = getAQI( PM25_SENSOR, AQI.concentrationPM25 );
-    AQI.AqiPM10 = getAQI( PM10_SENSOR, AQI.concentrationPM10 );
-  }
+  retrieveAQI();
 
   // Actualise l'indice AQI - update AQI index
   updateAQILevel();
@@ -139,6 +127,21 @@ void loop() {
   timer.run(); 
 }
 
+void retrieveAQI(){
+  AQI.AqiPM25 = getAQIValue( PM25_SENSOR, AQI.concentrationPM25 );
+  AQI.AqiPM10 = getAQIValue( PM10_SENSOR, AQI.concentrationPM10 );
+}
+
+int getAQIValue( int sensor, float density ){
+#if COUNTRY == FRANCE
+  return getATMO( sensor, density );
+#elif COUNTRY == EUROPE
+  return getACQI( sensor, density );
+#else
+  return getAQI( sensor, density );
+#endif  
+}
+
 void updateStatistics(){
   lastAQIs[measurementNumber%BUFFER_SIZE] = AQI;
   int elements = (measurementNumber>BUFFER_SIZE) ? BUFFER_SIZE : measurementNumber;
@@ -159,6 +162,7 @@ void updateStatistics(){
  * Calculate French ATMO AQI indicator
  */
 int getATMO( int sensor, float density ){
+  Serial.print("Using getATM0 for sensor "); Serial.print(sensor); Serial.print(" and density "); Serial.println(density);
   if ( sensor == PM25_SENSOR ) { //PM2,5
     if ( density <= 11 ) {
       return 1; 
@@ -216,96 +220,103 @@ void updateAQIDisplay(){
    * 6 SEVERE
    * 7 HAZARDOUS
    */
-  if ( COUNTRY == 0 ) {
-    // Système ATMO français - French ATMO AQI system 
-    switch ( AQI.AQI) {
-      case 10: 
-        AQI.AqiString = SEVERE;
-        AQI.AqiColor = SEVERE_COLOR;
-        break;
-      case 9:
-        AQI.AqiString = HEAVY;
-        AQI.AqiColor = HEAVY_COLOR;
-        break;
-      case 8:
-        AQI.AqiString = HEAVY;
-        AQI.AqiColor = HEAVY_COLOR;
-        break;  
-      case 7:
-        AQI.AqiString = MODERATE;
-        AQI.AqiColor = MODERATE_COLOR;
-        break;
-      case 6:
-        AQI.AqiString = MODERATE;
-        AQI.AqiColor = MODERATE_COLOR;
-        break;   
-      case 5:
-        AQI.AqiString = ACCEPTABLE;
-        AQI.AqiColor = ACCEPTABLE_COLOR;
-        break;
-      case 4:
-        AQI.AqiString = GOOD;
-        AQI.AqiColor = GOOD_COLOR;
-        break;
-      case 3:
-        AQI.AqiString = GOOD;
-        AQI.AqiColor = GOOD_COLOR;
-        break;
-      case 2:
-        AQI.AqiString = EXCELLENT;
-        AQI.AqiColor = EXCELLENT_COLOR;
-        break;
-      case 1:
-        AQI.AqiString = EXCELLENT;
-        AQI.AqiColor = EXCELLENT_COLOR;
-        break;           
-      }
-  } else if ( COUNTRY == 1 ) {
-    // European CAQI
-    switch ( AQI.AQI) {
-      case 25: 
-        AQI.AqiString = GOOD;
-        AQI.AqiColor = GOOD_COLOR;
-        break;
-      case 50:
-        AQI.AqiString = ACCEPTABLE;
-        AQI.AqiColor = ACCEPTABLE_COLOR;
-        break;
-      case 75:
-        AQI.AqiString = MODERATE;
-        AQI.AqiColor = MODERATE_COLOR;
-        break;
-      case 100:
-        AQI.AqiString = HEAVY;
-        AQI.AqiColor = HEAVY_COLOR;
-        break;         
-      default:
-        AQI.AqiString = SEVERE;
-        AQI.AqiColor = SEVERE_COLOR;
-      }  
-  } else if ( COUNTRY == 2 ) {
-    // USA / CN
-    if ( AQI.AQI <= 50 ) {
-        AQI.AqiString = GOOD;
-        AQI.AqiColor = GOOD_COLOR;
-    } else if ( AQI.AQI > 50 && AQI.AQI <= 100 ) {
-        AQI.AqiString = ACCEPTABLE;
-        AQI.AqiColor = ACCEPTABLE_COLOR;
-    } else if ( AQI.AQI > 100 && AQI.AQI <= 150 ) {
-        AQI.AqiString = MODERATE;
-        AQI.AqiColor = MODERATE_COLOR;
-    } else if ( AQI.AQI > 150 && AQI.AQI <= 200 ) {
-        AQI.AqiString = HEAVY;
-        AQI.AqiColor = HEAVY_COLOR;
-    } else if ( AQI.AQI > 200 && AQI.AQI <= 300 ) {  
-        AQI.AqiString = SEVERE;
-        AQI.AqiColor = SEVERE_COLOR;
-    } else {    
-       AQI.AqiString = HAZARDOUS;
-       AQI.AqiColor = HAZARDOUS_COLOR;
-    }  
+#if COUNTRY == FRANCE
+  Serial.println("Country is FRANCE");
+  // Système ATMO français - French ATMO AQI system 
+  switch ( AQI.AQI) {
+    case 10: 
+      AQI.AqiString = SEVERE;
+      AQI.AqiColor = SEVERE_COLOR;
+      break;
+    case 9:
+      AQI.AqiString = HEAVY;
+      AQI.AqiColor = HEAVY_COLOR;
+      break;
+    case 8:
+      AQI.AqiString = HEAVY;
+      AQI.AqiColor = HEAVY_COLOR;
+      break;  
+    case 7:
+      AQI.AqiString = MODERATE;
+      AQI.AqiColor = MODERATE_COLOR;
+      break;
+    case 6:
+      AQI.AqiString = MODERATE;
+      AQI.AqiColor = MODERATE_COLOR;
+      break;   
+    case 5:
+      AQI.AqiString = ACCEPTABLE;
+      AQI.AqiColor = ACCEPTABLE_COLOR;
+      break;
+    case 4:
+      AQI.AqiString = GOOD;
+      AQI.AqiColor = GOOD_COLOR;
+      break;
+    case 3:
+      AQI.AqiString = GOOD;
+      AQI.AqiColor = GOOD_COLOR;
+      break;
+    case 2:
+      AQI.AqiString = EXCELLENT;
+      AQI.AqiColor = EXCELLENT_COLOR;
+      break;
+    case 1:
+      AQI.AqiString = EXCELLENT;
+      AQI.AqiColor = EXCELLENT_COLOR;
+      break;           
   }
+  
+#elif COUNTRY == EUROPE
+  Serial.println("Country is EUROPE");
+  // European CAQI
+  switch ( AQI.AQI) {
+    case 25: 
+      AQI.AqiString = GOOD;
+      AQI.AqiColor = GOOD_COLOR;
+      break;
+    case 50:
+      AQI.AqiString = ACCEPTABLE;
+      AQI.AqiColor = ACCEPTABLE_COLOR;
+      break;
+    case 75:
+      AQI.AqiString = MODERATE;
+      AQI.AqiColor = MODERATE_COLOR;
+      break;
+    case 100:
+      AQI.AqiString = HEAVY;
+      AQI.AqiColor = HEAVY_COLOR;
+      break;         
+    default:
+      AQI.AqiString = SEVERE;
+      AQI.AqiColor = SEVERE_COLOR;
+      break;
+  }
+  
+#elif COUNTRY == USA_CHINA
+  Serial.println("Country is USA_CHINA");
+  // USA / CN
+  if ( AQI.AQI <= 50 ) {
+      AQI.AqiString = GOOD;
+      AQI.AqiColor = GOOD_COLOR;
+  } else if ( AQI.AQI > 50 && AQI.AQI <= 100 ) {
+      AQI.AqiString = ACCEPTABLE;
+      AQI.AqiColor = ACCEPTABLE_COLOR;
+  } else if ( AQI.AQI > 100 && AQI.AQI <= 150 ) {
+      AQI.AqiString = MODERATE;
+      AQI.AqiColor = MODERATE_COLOR;
+  } else if ( AQI.AQI > 150 && AQI.AQI <= 200 ) {
+      AQI.AqiString = HEAVY;
+      AQI.AqiColor = HEAVY_COLOR;
+  } else if ( AQI.AQI > 200 && AQI.AQI <= 300 ) {  
+      AQI.AqiString = SEVERE;
+      AQI.AqiColor = SEVERE_COLOR;
+  } else {    
+     AQI.AqiString = HAZARDOUS;
+     AQI.AqiColor = HAZARDOUS_COLOR;
+  }
+#endif  
 
+  Serial.println("DrawDisplay");
   drawDisplay();
 }
 /*
@@ -314,7 +325,7 @@ void updateAQIDisplay(){
  */
  
 int getACQI( int sensor, float density ){  
-  if ( sensor == 0 ) {  //PM2,5
+  if ( sensor == PM25_SENSOR ) {  //PM2,5
     if ( density == 0 ) {
       return 0; 
     } else if ( density <= 15 ) {
@@ -356,7 +367,7 @@ float calcAQI(float I_high, float I_low, float C_high, float C_low, float C) {
 
 int getAQI(int sensor, float density) {
   int d10 = (int)(density * 10);
-  if ( sensor == 0 ) {
+  if ( sensor == PM25_SENSOR ) {
     if (d10 <= 0) {
       return 0;
     }

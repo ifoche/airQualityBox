@@ -297,7 +297,7 @@ void drawChartXAxis(){
   tft.drawLine(CENTRAL_LINEWIDTH*4, h-CENTRAL_LINEWIDTH*4, w-CENTRAL_LINEWIDTH, h-CENTRAL_LINEWIDTH*4, FOREGROUND_COLOR);
 
   for (int i=1; i<=BUFFER_SIZE; i++){
-    tft.drawLine((xAxisSize/BUFFER_SIZE)*i+4*CENTRAL_LINEWIDTH, h-3*CENTRAL_LINEWIDTH, (xAxisSize/BUFFER_SIZE)*i+4*CENTRAL_LINEWIDTH, h-5*CENTRAL_LINEWIDTH, FOREGROUND_COLOR);  
+    tft.drawLine((xAxisSize/BUFFER_SIZE)*i+6*CENTRAL_LINEWIDTH, h-3*CENTRAL_LINEWIDTH, (xAxisSize/BUFFER_SIZE)*i+6*CENTRAL_LINEWIDTH, h-5*CENTRAL_LINEWIDTH, FOREGROUND_COLOR);  
   }
 
   drawChartXAxisTitles();
@@ -337,8 +337,7 @@ void drawChartXAxisTitles(){
 void drawChartValues(struct structAQI *AQIs, int limit){
   struct structAQI *AQIPointer = AQIs;
   for (int i=0; i<limit; i++){
-    drawChartValue(i, AQIPointer->AQI);
-    AQIPointer += sizeof(struct structAQI);
+    drawChartValue(i, AQIs[i].AQI);
   }
 }
 
@@ -387,6 +386,6 @@ void drawChartValue(int x, int AQI){
   
   //TODO: Draw a point coloured depending on its AQI in the TFT screen
   int y = (-AQI+10)*(yAxisSize/10);
-  tft.fillCircle(x+4*CENTRAL_LINEWIDTH, y, CENTRAL_LINEWIDTH/2, color);
+  tft.fillCircle(x+6*CENTRAL_LINEWIDTH, y, CENTRAL_LINEWIDTH/2, color);
 }
 
