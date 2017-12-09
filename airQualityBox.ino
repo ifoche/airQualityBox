@@ -36,6 +36,8 @@ struct structAQI AQI;
 struct structAQI lastAQIs[BUFFER_SIZE];
 unsigned long measurementNumber = 0;
 int AQIAvg = 0;
+float concentrationPM25Avg = 0.0;
+float concentrationPM10Avg = 0.0;
 int maxPM25 = 0;
 int maxPM10 = 0;
 int minPM25 = 10;
@@ -145,12 +147,23 @@ int getAQIValue( int sensor, float density ){
 void updateStatistics(){
   lastAQIs[measurementNumber%BUFFER_SIZE] = AQI;
   int elements = (measurementNumber>BUFFER_SIZE) ? BUFFER_SIZE : measurementNumber;
-  int average = 0;
+  int averageAQI = 0;
+  float averageConcentrationPM25 = 0.0;
+  float averageConcentrationPM10 = 0.0;
   for (int i=0; i<elements; i++){
-      average+=lastAQIs[i].AQI;
+      averageAQI+=lastAQIs[i].AQI;
+      averageConcentrationPM25+=lastAQIs[i].concentrationPM25;
+      averageConcentrationPM10+=lastAQIs[i].concentrationPM10;
   }
-  if (elements != 0) AQIAvg = average/elements;
-  else AQIAvg = AQI.AQI;
+  if (elements != 0) {
+    AQIAvg = averageAQI/elements;
+    concentrationPM25Avg = averageConcentrationPM25/elements;
+    concentrationPM10Avg = averageConcentrationPM10/elements;
+  } else {
+    AQIAvg = AQI.AQI;
+    concentrationPM25Avg = AQI.concentrationPM25;
+    concentrationPM10Avg = AQI.concentrationPM10;
+  }
   if (AQI.AqiPM25 < minPM25) minPM25 = AQI.AqiPM25;
   if (AQI.AqiPM25 > maxPM25) maxPM25 = AQI.AqiPM25;
   if (AQI.AqiPM10 < minPM10) minPM10 = AQI.AqiPM10;

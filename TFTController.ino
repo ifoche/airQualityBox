@@ -161,7 +161,7 @@ void drawMeasurementsScreen(){
   // draw PM10 AQI level
   drawAQILevel(false, "PM10", AQI.AqiPM10);
   // draw last BUFFER_SIZE average global AQI level
-  drawAQILevel(true, "AVERAGE", AQIAvg);
+  drawAQILevel(true, "AVERAGE", concentrationPM25Avg, concentrationPM10Avg);
 
   // write global AQI message
   writeAQILevelMessage(AQI.AqiString + " ("  + AQI.AQI + ")");
@@ -215,14 +215,27 @@ void writeAQILevelMessage(String message){
 }
 
 void writeAvgAQIMessage(){
+  int levelPM25 = getATMO(PM25_SENSOR, concentrationPM25Avg);
+  int levelPM10 = getATMO(PM10_SENSOR, concentrationPM10Avg);
   tftUpperMessageCursor(1, 4, 1);
   tft.print("Avg for the last "); 
   tft.println((measurementNumber<BUFFER_SIZE) ? measurementNumber+1 : BUFFER_SIZE);
   tftUpperMessageCursor(2, 4, 1);
   tft.print("AQI measurements: "); 
   tftUpperMessageCursor(3, 7, 2);
-  tft.println(AQIAvg);
-  Serial.print("Avg for the last: "); Serial.print(measurementNumber); Serial.print(" AQI measurements: "); Serial.println(AQIAvg);
+  tft.println((levelPM10 > levelPM25) ? levelPM10 : levelPM25);
+  tftUpperMessageCursor(4, 2, 1);
+  tft.print("Avg conc for ");
+  tft.print((levelPM10 > levelPM25) ? "PM10" : "PM25");
+  tft.print(" is ");
+  tft.println((levelPM10 > levelPM25) ? concentrationPM10Avg : concentrationPM25Avg);
+  Serial.print("Avg for the last: "); Serial.print(measurementNumber); Serial.print(" AQI measurements: "); Serial.println((levelPM10 > levelPM25) ? levelPM10 : levelPM25);
+}
+
+void drawAQILevel(boolean average, String partSize, float concentrationPM25, float concentrationPM10){
+  int levelPM25 = getATMO(PM25_SENSOR, concentrationPM25);
+  int levelPM10 = getATMO(PM10_SENSOR, concentrationPM10);
+  drawAQILevel(average, partSize, (levelPM10 > levelPM25) ? levelPM10 : levelPM25);
 }
 
 void drawAQILevel(boolean average, String partSize, int level){
